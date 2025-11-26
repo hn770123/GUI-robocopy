@@ -270,9 +270,10 @@ Namespace ViewModels
 
         ''' <summary>
         ''' 確認コマンドの実行処理（非同期ラッパー）
+        ''' 例外は内部でハンドリングされるため、fire-and-forgetで実行
         ''' </summary>
-        Private Sub ConfirmExecute(parameter As Object)
-            Dim task = ConfirmAsync()
+        Private Async Sub ConfirmExecute(parameter As Object)
+            Await ConfirmAsync()
         End Sub
 
         ''' <summary>
@@ -284,9 +285,10 @@ Namespace ViewModels
 
         ''' <summary>
         ''' 実行コマンドの実行処理（非同期ラッパー）
+        ''' 例外は内部でハンドリングされるため、fire-and-forgetで実行
         ''' </summary>
-        Private Sub ExecuteRobocopyExecute(parameter As Object)
-            Dim task = ExecuteAsync()
+        Private Async Sub ExecuteRobocopyExecute(parameter As Object)
+            Await ExecuteAsync()
         End Sub
 
         ''' <summary>

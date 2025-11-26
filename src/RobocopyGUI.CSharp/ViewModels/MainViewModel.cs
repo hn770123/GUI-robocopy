@@ -272,10 +272,11 @@ namespace RobocopyGUI.ViewModels
 
         /// <summary>
         /// 確認コマンドの実行処理（非同期ラッパー）
+        /// 例外は内部でハンドリングされるため、fire-and-forgetで実行
         /// </summary>
-        private void ConfirmExecute(object parameter)
+        private async void ConfirmExecute(object parameter)
         {
-            var task = ConfirmAsync();
+            await ConfirmAsync();
         }
 
         /// <summary>
@@ -288,10 +289,11 @@ namespace RobocopyGUI.ViewModels
 
         /// <summary>
         /// 実行コマンドの実行処理（非同期ラッパー）
+        /// 例外は内部でハンドリングされるため、fire-and-forgetで実行
         /// </summary>
-        private void ExecuteRobocopyExecute(object parameter)
+        private async void ExecuteRobocopyExecute(object parameter)
         {
-            var task = ExecuteAsync();
+            await ExecuteAsync();
         }
 
         /// <summary>
