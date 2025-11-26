@@ -4,7 +4,8 @@ Robocopy GUIアプリケーションの主要な処理フローを示します�
 
 ## ファイル確認処理
 
-ユーザーがコピー元フォルダを選択して確認ボタンをクリックした時の処理フローです。
+ユーザーがコピー元・コピー先フォルダを選択して確認ボタンをクリックした時の処理フローです。
+robocopyの`/L`オプションを使用して、実際にコピーされるファイルの一覧を取得します。
 
 ```mermaid
 sequenceDiagram
@@ -12,10 +13,16 @@ sequenceDiagram
     participant User as ユーザー
     participant View as MainWindow
     participant VM as MainViewModel
-    participant FileSystem as ファイルシステム
+    participant Service as RobocopyService
+    participant Process as robocopy.exe
 
     User->>View: コピー元フォルダを入力
     View->>VM: SourcePathプロパティ更新
+    VM->>VM: UpdateGeneratedCommand()
+    VM-->>View: GeneratedCommand更新通知
+    
+    User->>View: コピー先フォルダを入力
+    View->>VM: DestinationPathプロパティ更新
     VM->>VM: UpdateGeneratedCommand()
     VM-->>View: GeneratedCommand更新通知
     
@@ -23,17 +30,25 @@ sequenceDiagram
     View->>VM: ConfirmCommand.Execute()
     VM->>VM: CanConfirm()チェック
     
-    alt ソースパスが有効
+    alt ソースパス・デスティネーションパスが有効
         VM->>VM: IsRunning = true
         VM-->>View: ボタン表示状態更新
-        VM->>VM: StatusMessage = "ファイル一覧を取得中..."
+        VM->>VM: StatusMessage = "robocopyでコピー対象を確認中..."
+        VM->>VM: GetSelectedOptions()
         
-        VM->>FileSystem: GetFileList(SourcePath)
-        loop 各ファイル
-            FileSystem-->>VM: ファイル情報
-            VM->>VM: FileItemを作成
+        VM->>Service: PreviewAsync(Source, Dest, Options, Token)
+        Service->>Service: BuildArguments(listOnly=true)
+        Note over Service: /L, /Vオプションを追加
+        Service->>Process: robocopy /L /V で起動
+        
+        loop 出力読み取り
+            Process-->>Service: 標準出力
+            Service->>Service: ファイル情報を解析
+            Service->>Service: FileItem作成（CopyReason含む）
         end
-        FileSystem-->>VM: ファイル一覧完了
+        
+        Process-->>Service: 終了
+        Service-->>VM: RobocopyPreviewResult
         
         VM->>VM: FileList.Clear()
         VM->>VM: ファイル追加
@@ -43,7 +58,7 @@ sequenceDiagram
         VM->>VM: ProgressPercentage = 100
         VM->>VM: IsRunning = false
         VM-->>View: 表示更新通知
-    else ソースパスが無効
+    else パスが無効
         VM-->>View: エラーメッセージ表示
     end
 ```

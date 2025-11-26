@@ -34,11 +34,11 @@ flowchart TB
         RS[RobocopyService]
         RP[RobocopyProgress]
         RR[RobocopyResult]
+        RPR[RobocopyPreviewResult]
     end
     
     subgraph External["External"]
         ROBO[robocopy.exe]
-        FS[ファイルシステム]
     end
     
     MW <-->|DataBinding| MVM
@@ -49,9 +49,20 @@ flowchart TB
     MVM --> RS
     RS --> RP
     RS --> RR
+    RS --> RPR
     RS --> ROBO
-    MVM --> FS
 ```
+
+## 確認処理について
+
+確認処理では、robocopyの`/L`オプション（リスト表示のみ）を使用してプレビュー実行を行います。
+これにより、コピーオプション（`/XO`での古いファイル除外など）を反映した、実際にコピーされるファイルの一覧を正確に取得できます。
+
+### 主な特徴
+
+- コピー元・コピー先の両方が設定されている場合のみ確認ボタンが有効
+- 選択されたコピーオプションを反映した正確なファイル一覧を表示
+- 各ファイルのコピー理由（新規/更新/変更など）を表示
 
 ## 技術スタック
 

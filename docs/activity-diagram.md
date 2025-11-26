@@ -36,7 +36,8 @@ flowchart TD
 
 ## 確認処理フロー
 
-ファイル一覧取得の詳細フローです。
+robocopyの`/L`オプションを使用したプレビュー実行の詳細フローです。
+コピーオプションを反映した、実際にコピーされるファイルの一覧を取得します。
 
 ```mermaid
 flowchart TD
@@ -45,24 +46,31 @@ flowchart TD
     CheckSource -->|No| Error1[エラーメッセージ表示]
     Error1 --> End1([処理終了])
     
-    CheckSource -->|Yes| SetRunning[IsRunning = true]
-    SetRunning --> UpdateStatus1[ステータス更新:<br/>ファイル一覧を取得中]
+    CheckSource -->|Yes| CheckDest{デスティネーション<br/>パスが有効?}
+    CheckDest -->|No| Error2[エラーメッセージ表示]
+    Error2 --> End1
+    
+    CheckDest -->|Yes| SetRunning[IsRunning = true]
+    SetRunning --> UpdateStatus1[ステータス更新:<br/>robocopyでコピー対象を確認中]
     UpdateStatus1 --> CreateToken[CancellationTokenSource作成]
-    CreateToken --> GetFiles[ファイル一覧取得開始]
+    CreateToken --> GetOptions[選択オプション取得]
+    GetOptions --> BuildArgs[コマンドライン引数構築<br/>/L /Vオプション付き]
+    BuildArgs --> StartRobocopy[robocopyプロセス起動]
     
-    GetFiles --> GetDir[ディレクトリ情報取得]
-    GetDir --> LoopFiles{ファイル<br/>あり?}
+    StartRobocopy --> WaitLoop{プロセス<br/>終了?}
     
-    LoopFiles -->|Yes| CheckCancel{キャンセル<br/>要求?}
-    CheckCancel -->|Yes| Cancelled[キャンセル処理]
+    WaitLoop -->|No| CheckCancel{キャンセル<br/>要求?}
+    CheckCancel -->|Yes| KillProcess[プロセス強制終了]
+    KillProcess --> Cancelled[キャンセル処理]
     Cancelled --> SetRunning2
     
-    CheckCancel -->|No| CreateFileItem[FileItem作成]
-    CreateFileItem --> AddToList[リストに追加]
-    AddToList --> NextFile[次のファイル]
-    NextFile --> LoopFiles
+    CheckCancel -->|No| ReadOutput[標準出力読み取り]
+    ReadOutput --> WaitDelay[100ms待機]
+    WaitDelay --> WaitLoop
     
-    LoopFiles -->|No| ClearList[既存リストをクリア]
+    WaitLoop -->|Yes| ParseOutput[出力解析]
+    ParseOutput --> CreateFileItems[FileItem作成<br/>CopyReason含む]
+    CreateFileItems --> ClearList[既存リストをクリア]
     ClearList --> AddAll[全ファイル追加]
     AddAll --> CalcTotal[合計サイズ計算]
     CalcTotal --> UpdateCount[ファイル数更新]

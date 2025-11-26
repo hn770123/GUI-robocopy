@@ -58,9 +58,11 @@ classDiagram
     }
     
     class RobocopyService {
+        +PreviewAsync(string, string, RobocopyOption, CancellationToken) Task~RobocopyPreviewResult~
         +ExecuteAsync(string, string, RobocopyOption, IProgress~RobocopyProgress~, CancellationToken) Task~RobocopyResult~
         +GenerateCommand(string, string, RobocopyOption) string
-        -BuildArguments(string, string, RobocopyOption) string
+        -BuildArguments(string, string, RobocopyOption, bool) string
+        -ParsePreviewOutput(List~string~, RobocopyPreviewResult, string)
         -GetExitCodeMessage(int) string
     }
     
@@ -97,6 +99,7 @@ classDiagram
         +string RelativePath
         +long FileSize
         +DateTime LastModified
+        +string CopyReason
         +string FileSizeDisplay
     }
     
@@ -114,6 +117,14 @@ classDiagram
         +int ExitCode
     }
     
+    class RobocopyPreviewResult {
+        +bool Success
+        +ObservableCollection~FileItem~ Files
+        +long TotalSize
+        +string ErrorMessage
+        +int ExitCode
+    }
+    
     MainWindow --> MainViewModel : DataContext
     MainViewModel --> RobocopyService : uses
     MainViewModel --> RelayCommand : creates
@@ -123,6 +134,7 @@ classDiagram
     RobocopyService --> RobocopyOption : uses
     RobocopyService --> RobocopyProgress : creates
     RobocopyService --> RobocopyResult : creates
+    RobocopyService --> RobocopyPreviewResult : creates
     
     MainViewModel ..|> INotifyPropertyChanged : implements
     CopyOptionItem ..|> INotifyPropertyChanged : implements
@@ -158,6 +170,7 @@ classDiagram
         RobocopyService
         RobocopyProgress
         RobocopyResult
+        RobocopyPreviewResult
     }
     
     View --> ViewModel : DataBinding
