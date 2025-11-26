@@ -1,3 +1,10 @@
+---
+layout: default
+title: ユースケース図
+---
+
+[← ホームに戻る](index.md)
+
 # ユースケース図
 
 Robocopy GUIアプリケーションのユースケースを示します。

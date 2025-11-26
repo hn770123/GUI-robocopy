@@ -1,3 +1,10 @@
+---
+layout: default
+title: シーケンス図
+---
+
+[← ホームに戻る](index.md)
+
 # シーケンス図
 
 Robocopy GUIアプリケーションの主要な処理フローを示します。

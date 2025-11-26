@@ -1,3 +1,10 @@
+---
+layout: default
+title: アクティビティ図
+---
+
+[← ホームに戻る](index.md)
+
 # アクティビティ図
 
 Robocopy GUIアプリケーションの処理フローを示します。
