@@ -1,0 +1,35 @@
+# Visual Studio / .NET ビルド成果物
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+# NuGet パッケージ
+packages/
+*.nupkg
+*.snupkg
+
+# Visual Studio キャッシュ/ログ
+.vs/
+*.log
+
+# ビルド結果
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+bld/
+
+# テスト結果
+TestResults/
+*.trx
+*.coverage
+
+# その他
+*.tmp
+*.temp
+Thumbs.db
+.DS_Store
