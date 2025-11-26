@@ -1,3 +1,10 @@
+---
+layout: default
+title: クラス図
+---
+
+[← ホームに戻る](index.md)
+
 # クラス図
 
 Robocopy GUIアプリケーションのクラス構造を示します。

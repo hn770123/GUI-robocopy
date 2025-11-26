@@ -1,0 +1,18 @@
+# Jekyll設定ファイル
+title: Robocopy GUI
+description: Windows標準のrobocopyコマンドをGUIで操作するためのアプリケーション
+theme: jekyll-theme-cayman
+
+# GitHub関連設定
+repository: hn770123/GUI-robocopy
+
+# マークダウン設定
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  hard_wrap: false
+
+# 除外ファイル
+exclude:
+  - README.md
