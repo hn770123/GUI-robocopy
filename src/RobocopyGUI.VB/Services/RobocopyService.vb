@@ -281,7 +281,9 @@ Namespace Services
                                                                        filesCopied += 1
                                                                        currentProgress.FilesCopied = filesCopied
                                                                        currentProgress.CurrentFile = e.Data.Trim()
-                                                                       progressHandler?.Report(currentProgress)
+                                                                       If progressHandler IsNot Nothing Then
+                                                                           progressHandler.Report(currentProgress)
+                                                                       End If
                                                                    End If
 
                                                                    ' 進捗率を解析
@@ -303,7 +305,9 @@ Namespace Services
                                                                            Dim percent As Double
                                                                            If Double.TryParse(percentStr, percent) Then
                                                                                currentProgress.Percentage = percent
-                                                                               progressHandler?.Report(currentProgress)
+                                                                               If progressHandler IsNot Nothing Then
+                                                                                   progressHandler.Report(currentProgress)
+                                                                               End If
                                                                            End If
                                                                        End If
                                                                    End If
@@ -356,10 +360,9 @@ Namespace Services
         ''' <param name="options">オプション設定</param>
         ''' <param name="listOnly">Trueの場合、/Lオプションを追加（実際にコピーせずリスト表示のみ）</param>
         Private Function BuildArguments(source As String, destination As String, options As RobocopyOption, Optional listOnly As Boolean = False) As String
-            Dim args As New List(Of String) From {
-                $"""{source}""",
-                $"""{destination}"""
-            }
+            Dim args As New List(Of String)
+            args.Add(String.Format("""{0}""", source))
+            args.Add(String.Format("""{0}""", destination))
 
             ' オプションを追加
             If options.Mirror Then
@@ -379,15 +382,15 @@ Namespace Services
             End If
 
             If options.RetryCount > 0 Then
-                args.Add($"/R:{options.RetryCount}")
+                args.Add(String.Format("/R:{0}", options.RetryCount))
             End If
 
             If options.RetryWaitTime > 0 Then
-                args.Add($"/W:{options.RetryWaitTime}")
+                args.Add(String.Format("/W:{0}", options.RetryWaitTime))
             End If
 
             If options.MultiThreadCount > 1 Then
-                args.Add($"/MT:{options.MultiThreadCount}")
+                args.Add(String.Format("/MT:{0}", options.MultiThreadCount))
             End If
 
             If options.ExcludeOlder Then
@@ -407,7 +410,7 @@ Namespace Services
             End If
 
             If Not String.IsNullOrEmpty(options.LogPath) AndAlso Not listOnly Then
-                args.Add($"/LOG:""{options.LogPath}""")
+                args.Add(String.Format("/LOG:""{0}""", options.LogPath))
             End If
 
             ' リスト表示のみの場合、/Lオプションを追加
@@ -449,7 +452,7 @@ Namespace Services
                 Case 16
                     Return "重大なエラー。コピーは実行されませんでした。"
                 Case Else
-                    Return $"不明なエラー（終了コード: {exitCode}）"
+                    Return String.Format("不明なエラー（終了コード: {0}）", exitCode)
             End Select
         End Function
 
@@ -462,7 +465,7 @@ Namespace Services
         ''' <returns>生成されたコマンド文字列</returns>
         Public Function GenerateCommand(source As String, destination As String, options As RobocopyOption) As String
             Dim arguments = BuildArguments(source, destination, options)
-            Return $"robocopy {arguments}"
+            Return String.Format("robocopy {0}", arguments)
         End Function
 
     End Class

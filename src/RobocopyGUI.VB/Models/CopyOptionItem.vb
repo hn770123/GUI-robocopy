@@ -20,7 +20,7 @@ Namespace Models
             End Get
             Set(value As String)
                 _optionKey = value
-                OnPropertyChanged(NameOf(OptionKey))
+                OnPropertyChanged("OptionKey")
             End Set
         End Property
 
@@ -35,7 +35,7 @@ Namespace Models
             End Get
             Set(value As String)
                 _displayName = value
-                OnPropertyChanged(NameOf(DisplayName))
+                OnPropertyChanged("DisplayName")
             End Set
         End Property
 
@@ -50,7 +50,7 @@ Namespace Models
             End Get
             Set(value As String)
                 _description = value
-                OnPropertyChanged(NameOf(Description))
+                OnPropertyChanged("Description")
             End Set
         End Property
 
@@ -66,7 +66,7 @@ Namespace Models
             Set(value As Boolean)
                 If _isSelected <> value Then
                     _isSelected = value
-                    OnPropertyChanged(NameOf(IsSelected))
+                    OnPropertyChanged("IsSelected")
                 End If
             End Set
         End Property

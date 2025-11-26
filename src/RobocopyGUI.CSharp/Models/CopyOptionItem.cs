@@ -15,11 +15,11 @@ namespace RobocopyGUI.Models
         /// </summary>
         public string OptionKey
         {
-            get => _optionKey;
+            get { return _optionKey; }
             set
             {
                 _optionKey = value;
-                OnPropertyChanged(nameof(OptionKey));
+                OnPropertyChanged("OptionKey");
             }
         }
 
@@ -30,11 +30,11 @@ namespace RobocopyGUI.Models
         /// </summary>
         public string DisplayName
         {
-            get => _displayName;
+            get { return _displayName; }
             set
             {
                 _displayName = value;
-                OnPropertyChanged(nameof(DisplayName));
+                OnPropertyChanged("DisplayName");
             }
         }
 
@@ -45,11 +45,11 @@ namespace RobocopyGUI.Models
         /// </summary>
         public string Description
         {
-            get => _description;
+            get { return _description; }
             set
             {
                 _description = value;
-                OnPropertyChanged(nameof(Description));
+                OnPropertyChanged("Description");
             }
         }
 
@@ -60,13 +60,13 @@ namespace RobocopyGUI.Models
         /// </summary>
         public bool IsSelected
         {
-            get => _isSelected;
+            get { return _isSelected; }
             set
             {
                 if (_isSelected != value)
                 {
                     _isSelected = value;
-                    OnPropertyChanged(nameof(IsSelected));
+                    OnPropertyChanged("IsSelected");
                 }
             }
         }
@@ -82,7 +82,11 @@ namespace RobocopyGUI.Models
         /// <param name="propertyName">変更されたプロパティ名</param>
         protected virtual void OnPropertyChanged(string propertyName)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            var handler = PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
     }
 }

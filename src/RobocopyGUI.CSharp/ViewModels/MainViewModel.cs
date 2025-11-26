@@ -33,13 +33,13 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public string SourcePath
         {
-            get => _sourcePath;
+            get { return _sourcePath; }
             set
             {
                 if (_sourcePath != value)
                 {
                     _sourcePath = value;
-                    OnPropertyChanged(nameof(SourcePath));
+                    OnPropertyChanged("SourcePath");
                     UpdateGeneratedCommand();
                 }
             }
@@ -52,13 +52,13 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public string DestinationPath
         {
-            get => _destinationPath;
+            get { return _destinationPath; }
             set
             {
                 if (_destinationPath != value)
                 {
                     _destinationPath = value;
-                    OnPropertyChanged(nameof(DestinationPath));
+                    OnPropertyChanged("DestinationPath");
                     UpdateGeneratedCommand();
                 }
             }
@@ -71,11 +71,11 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public ObservableCollection<CopyOptionItem> CopyOptions
         {
-            get => _copyOptions;
+            get { return _copyOptions; }
             set
             {
                 _copyOptions = value;
-                OnPropertyChanged(nameof(CopyOptions));
+                OnPropertyChanged("CopyOptions");
             }
         }
 
@@ -86,11 +86,11 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public ObservableCollection<FileItem> FileList
         {
-            get => _fileList;
+            get { return _fileList; }
             set
             {
                 _fileList = value;
-                OnPropertyChanged(nameof(FileList));
+                OnPropertyChanged("FileList");
             }
         }
 
@@ -101,11 +101,11 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public int TotalFileCount
         {
-            get => _totalFileCount;
+            get { return _totalFileCount; }
             set
             {
                 _totalFileCount = value;
-                OnPropertyChanged(nameof(TotalFileCount));
+                OnPropertyChanged("TotalFileCount");
             }
         }
 
@@ -116,11 +116,11 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public string TotalFileSizeDisplay
         {
-            get => _totalFileSizeDisplay;
+            get { return _totalFileSizeDisplay; }
             set
             {
                 _totalFileSizeDisplay = value;
-                OnPropertyChanged(nameof(TotalFileSizeDisplay));
+                OnPropertyChanged("TotalFileSizeDisplay");
             }
         }
 
@@ -131,11 +131,11 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public string StatusMessage
         {
-            get => _statusMessage;
+            get { return _statusMessage; }
             set
             {
                 _statusMessage = value;
-                OnPropertyChanged(nameof(StatusMessage));
+                OnPropertyChanged("StatusMessage");
             }
         }
 
@@ -146,11 +146,11 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public double ProgressPercentage
         {
-            get => _progressPercentage;
+            get { return _progressPercentage; }
             set
             {
                 _progressPercentage = value;
-                OnPropertyChanged(nameof(ProgressPercentage));
+                OnPropertyChanged("ProgressPercentage");
             }
         }
 
@@ -161,11 +161,11 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public string GeneratedCommand
         {
-            get => _generatedCommand;
+            get { return _generatedCommand; }
             set
             {
                 _generatedCommand = value;
-                OnPropertyChanged(nameof(GeneratedCommand));
+                OnPropertyChanged("GeneratedCommand");
             }
         }
 
@@ -176,37 +176,49 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         public bool IsRunning
         {
-            get => _isRunning;
+            get { return _isRunning; }
             set
             {
                 _isRunning = value;
-                OnPropertyChanged(nameof(IsRunning));
-                OnPropertyChanged(nameof(IsNotRunning));
-                OnPropertyChanged(nameof(ConfirmButtonVisibility));
-                OnPropertyChanged(nameof(ExecuteButtonVisibility));
-                OnPropertyChanged(nameof(CancelButtonVisibility));
+                OnPropertyChanged("IsRunning");
+                OnPropertyChanged("IsNotRunning");
+                OnPropertyChanged("ConfirmButtonVisibility");
+                OnPropertyChanged("ExecuteButtonVisibility");
+                OnPropertyChanged("CancelButtonVisibility");
             }
         }
 
         /// <summary>
         /// 実行中でないかどうか
         /// </summary>
-        public bool IsNotRunning => !_isRunning;
+        public bool IsNotRunning
+        {
+            get { return !_isRunning; }
+        }
 
         /// <summary>
         /// 確認ボタンの表示状態
         /// </summary>
-        public Visibility ConfirmButtonVisibility => IsRunning ? Visibility.Collapsed : Visibility.Visible;
+        public Visibility ConfirmButtonVisibility
+        {
+            get { return IsRunning ? Visibility.Collapsed : Visibility.Visible; }
+        }
 
         /// <summary>
         /// 実行ボタンの表示状態
         /// </summary>
-        public Visibility ExecuteButtonVisibility => IsRunning ? Visibility.Collapsed : Visibility.Visible;
+        public Visibility ExecuteButtonVisibility
+        {
+            get { return IsRunning ? Visibility.Collapsed : Visibility.Visible; }
+        }
 
         /// <summary>
         /// 中止ボタンの表示状態
         /// </summary>
-        public Visibility CancelButtonVisibility => IsRunning ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility CancelButtonVisibility
+        {
+            get { return IsRunning ? Visibility.Visible : Visibility.Collapsed; }
+        }
 
         #endregion
 
@@ -253,9 +265,43 @@ namespace RobocopyGUI.ViewModels
             // コマンドを初期化
             BrowseSourceCommand = new RelayCommand(BrowseSource);
             BrowseDestinationCommand = new RelayCommand(BrowseDestination);
-            ConfirmCommand = new RelayCommand(async _ => await ConfirmAsync(), _ => CanConfirm());
-            ExecuteCommand = new RelayCommand(async _ => await ExecuteAsync(), _ => CanExecute());
+            ConfirmCommand = new RelayCommand(ConfirmExecute, CanConfirmFunc);
+            ExecuteCommand = new RelayCommand(ExecuteRobocopyExecute, CanExecuteFunc);
             CancelCommand = new RelayCommand(Cancel);
+        }
+
+        /// <summary>
+        /// 確認コマンドの実行処理（非同期ラッパー）
+        /// 例外は内部でハンドリングされるため、fire-and-forgetで実行
+        /// </summary>
+        private async void ConfirmExecute(object parameter)
+        {
+            await ConfirmAsync();
+        }
+
+        /// <summary>
+        /// 確認可能かどうかを判定する関数
+        /// </summary>
+        private bool CanConfirmFunc(object parameter)
+        {
+            return CanConfirm();
+        }
+
+        /// <summary>
+        /// 実行コマンドの実行処理（非同期ラッパー）
+        /// 例外は内部でハンドリングされるため、fire-and-forgetで実行
+        /// </summary>
+        private async void ExecuteRobocopyExecute(object parameter)
+        {
+            await ExecuteAsync();
+        }
+
+        /// <summary>
+        /// 実行可能かどうかを判定する関数
+        /// </summary>
+        private bool CanExecuteFunc(object parameter)
+        {
+            return CanExecute();
         }
 
         /// <summary>
@@ -378,11 +424,11 @@ namespace RobocopyGUI.ViewModels
                     
                     if (previewResult.Success)
                     {
-                        StatusMessage = $"確認完了: {TotalFileCount} ファイル（実際にコピーされるファイル数）";
+                        StatusMessage = string.Format("確認完了: {0} ファイル（実際にコピーされるファイル数）", TotalFileCount);
                     }
                     else
                     {
-                        StatusMessage = $"確認完了（警告あり）: {TotalFileCount} ファイル - {previewResult.ErrorMessage}";
+                        StatusMessage = string.Format("確認完了（警告あり）: {0} ファイル - {1}", TotalFileCount, previewResult.ErrorMessage);
                     }
                     ProgressPercentage = 100;
                 });
@@ -393,8 +439,8 @@ namespace RobocopyGUI.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"エラー: {ex.Message}";
-                MessageBox.Show($"確認処理中にエラーが発生しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusMessage = string.Format("エラー: {0}", ex.Message);
+                MessageBox.Show(string.Format("確認処理中にエラーが発生しました。\n{0}", ex.Message), "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -437,7 +483,7 @@ namespace RobocopyGUI.ViewModels
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         ProgressPercentage = p.Percentage;
-                        StatusMessage = $"コピー中... {p.CurrentFile} ({p.Percentage:F1}%)";
+                        StatusMessage = string.Format("コピー中... {0} ({1:F1}%)", p.CurrentFile, p.Percentage);
                     });
                 });
 
@@ -450,14 +496,14 @@ namespace RobocopyGUI.ViewModels
 
                 if (result.Success)
                 {
-                    StatusMessage = $"コピー完了: {result.FilesCopied} ファイルをコピーしました";
+                    StatusMessage = string.Format("コピー完了: {0} ファイルをコピーしました", result.FilesCopied);
                     ProgressPercentage = 100;
-                    MessageBox.Show($"コピーが完了しました。\nコピーされたファイル数: {result.FilesCopied}", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(string.Format("コピーが完了しました。\nコピーされたファイル数: {0}", result.FilesCopied), "完了", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    StatusMessage = $"コピー失敗: {result.ErrorMessage}";
-                    MessageBox.Show($"コピー中にエラーが発生しました。\n{result.ErrorMessage}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    StatusMessage = string.Format("コピー失敗: {0}", result.ErrorMessage);
+                    MessageBox.Show(string.Format("コピー中にエラーが発生しました。\n{0}", result.ErrorMessage), "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (OperationCanceledException)
@@ -467,8 +513,8 @@ namespace RobocopyGUI.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"エラー: {ex.Message}";
-                MessageBox.Show($"コピー中にエラーが発生しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusMessage = string.Format("エラー: {0}", ex.Message);
+                MessageBox.Show(string.Format("コピー中にエラーが発生しました。\n{0}", ex.Message), "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -481,7 +527,10 @@ namespace RobocopyGUI.ViewModels
         /// </summary>
         private void Cancel(object parameter)
         {
-            _cancellationTokenSource?.Cancel();
+            if (_cancellationTokenSource != null)
+            {
+                _cancellationTokenSource.Cancel();
+            }
             StatusMessage = "キャンセル中...";
         }
 
@@ -553,7 +602,7 @@ namespace RobocopyGUI.ViewModels
             var options = CopyOptions.Where(o => o.IsSelected).Select(o => o.OptionKey);
             var optionsString = string.Join(" ", options);
             
-            GeneratedCommand = $"robocopy \"{SourcePath}\" \"{DestinationPath}\" {optionsString}";
+            GeneratedCommand = string.Format("robocopy \"{0}\" \"{1}\" {2}", SourcePath, DestinationPath, optionsString);
         }
 
         /// <summary>
@@ -571,7 +620,7 @@ namespace RobocopyGUI.ViewModels
                 suffixIndex++;
             }
             
-            return $"{size:F2} {suffixes[suffixIndex]}";
+            return string.Format("{0:F2} {1}", size, suffixes[suffixIndex]);
         }
 
         #region INotifyPropertyChanged
@@ -587,7 +636,11 @@ namespace RobocopyGUI.ViewModels
         /// <param name="propertyName">変更されたプロパティ名</param>
         protected virtual void OnPropertyChanged(string propertyName)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            var handler = PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
 
         #endregion

@@ -46,7 +46,7 @@ Namespace Models
                     suffixIndex += 1
                 End While
 
-                Return $"{size:F2} {suffixes(suffixIndex)}"
+                Return String.Format("{0:F2} {1}", size, suffixes(suffixIndex))
             End Get
         End Property
 
