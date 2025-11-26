@@ -21,7 +21,11 @@ namespace RobocopyGUI.ViewModels
         /// <param name="canExecute">実行可能かどうかを判定する関数（省略可）</param>
         public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
         {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            if (execute == null)
+            {
+                throw new ArgumentNullException("execute");
+            }
+            _execute = execute;
             _canExecute = canExecute;
         }
 

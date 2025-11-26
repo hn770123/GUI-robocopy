@@ -51,7 +51,7 @@ namespace RobocopyGUI.Models
                     suffixIndex++;
                 }
                 
-                return $"{size:F2} {suffixes[suffixIndex]}";
+                return string.Format("{0:F2} {1}", size, suffixes[suffixIndex]);
             }
         }
     }

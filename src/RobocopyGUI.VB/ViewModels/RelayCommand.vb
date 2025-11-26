@@ -21,7 +21,7 @@ Namespace ViewModels
         ''' <param name="canExecute">実行可能かどうかを判定する関数（省略可）</param>
         Public Sub New(execute As Action(Of Object), Optional canExecute As Func(Of Object, Boolean) = Nothing)
             If execute Is Nothing Then
-                Throw New ArgumentNullException(NameOf(execute))
+                Throw New ArgumentNullException("execute")
             End If
             _execute = execute
             _canExecute = canExecute

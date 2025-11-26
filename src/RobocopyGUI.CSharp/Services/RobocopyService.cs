@@ -230,7 +230,8 @@ namespace RobocopyGUI.Services
                     var sizeStr = match.Groups[2].Value;
                     var filePath = match.Groups[3].Value.Trim();
 
-                    if (long.TryParse(sizeStr, out long fileSize))
+                    long fileSize;
+                    if (long.TryParse(sizeStr, out fileSize))
                     {
                         var fileName = System.IO.Path.GetFileName(filePath);
                         var relativePath = System.IO.Path.GetDirectoryName(filePath);
@@ -318,7 +319,10 @@ namespace RobocopyGUI.Services
                                 filesCopied++;
                                 currentProgress.FilesCopied = filesCopied;
                                 currentProgress.CurrentFile = e.Data.Trim();
-                                progress?.Report(currentProgress);
+                                if (progress != null)
+                                {
+                                    progress.Report(currentProgress);
+                                }
                             }
                             
                             // 進捗率を解析
@@ -343,10 +347,14 @@ namespace RobocopyGUI.Services
                                     }
                                     
                                     var percentStr = e.Data.Substring(startIndex, percentIndex - startIndex);
-                                    if (double.TryParse(percentStr, out double percent))
+                                    double percent;
+                                    if (double.TryParse(percentStr, out percent))
                                     {
                                         currentProgress.Percentage = percent;
-                                        progress?.Report(currentProgress);
+                                        if (progress != null)
+                                        {
+                                            progress.Report(currentProgress);
+                                        }
                                     }
                                 }
                             }
@@ -410,8 +418,8 @@ namespace RobocopyGUI.Services
         {
             var args = new List<string>
             {
-                $"\"{source}\"",
-                $"\"{destination}\""
+                string.Format("\"{0}\"", source),
+                string.Format("\"{0}\"", destination)
             };
 
             // オプションを追加
@@ -440,17 +448,17 @@ namespace RobocopyGUI.Services
 
             if (options.RetryCount > 0)
             {
-                args.Add($"/R:{options.RetryCount}");
+                args.Add(string.Format("/R:{0}", options.RetryCount));
             }
 
             if (options.RetryWaitTime > 0)
             {
-                args.Add($"/W:{options.RetryWaitTime}");
+                args.Add(string.Format("/W:{0}", options.RetryWaitTime));
             }
 
             if (options.MultiThreadCount > 1)
             {
-                args.Add($"/MT:{options.MultiThreadCount}");
+                args.Add(string.Format("/MT:{0}", options.MultiThreadCount));
             }
 
             if (options.ExcludeOlder)
@@ -475,7 +483,7 @@ namespace RobocopyGUI.Services
 
             if (!string.IsNullOrEmpty(options.LogPath) && !listOnly)
             {
-                args.Add($"/LOG:\"{options.LogPath}\"");
+                args.Add(string.Format("/LOG:\"{0}\"", options.LogPath));
             }
 
             // リスト表示のみの場合、/Lオプションを追加
@@ -520,7 +528,7 @@ namespace RobocopyGUI.Services
                 case 16:
                     return "重大なエラー。コピーは実行されませんでした。";
                 default:
-                    return $"不明なエラー（終了コード: {exitCode}）";
+                    return string.Format("不明なエラー（終了コード: {0}）", exitCode);
             }
         }
 
@@ -534,7 +542,7 @@ namespace RobocopyGUI.Services
         public string GenerateCommand(string source, string destination, RobocopyOption options)
         {
             var arguments = BuildArguments(source, destination, options);
-            return $"robocopy {arguments}";
+            return string.Format("robocopy {0}", arguments);
         }
     }
 }
