@@ -133,9 +133,18 @@ namespace RobocopyGUI.Services
                                 if (percentIndex > 0)
                                 {
                                     var startIndex = percentIndex - 1;
-                                    while (startIndex > 0 && (char.IsDigit(e.Data[startIndex - 1]) || e.Data[startIndex - 1] == '.'))
+                                    // 安全なインデックスチェック
+                                    while (startIndex > 0)
                                     {
-                                        startIndex--;
+                                        var prevChar = e.Data[startIndex - 1];
+                                        if (char.IsDigit(prevChar) || prevChar == '.')
+                                        {
+                                            startIndex--;
+                                        }
+                                        else
+                                        {
+                                            break;
+                                        }
                                     }
                                     
                                     var percentStr = e.Data.Substring(startIndex, percentIndex - startIndex);
@@ -168,8 +177,6 @@ namespace RobocopyGUI.Services
                         
                         await Task.Delay(100);
                     }
-
-                    await process.WaitForExitAsync();
 
                     // robocopyの終了コード解釈
                     // 0-7: 成功（コピー完了）
@@ -322,31 +329,6 @@ namespace RobocopyGUI.Services
         {
             var arguments = BuildArguments(source, destination, options);
             return $"robocopy {arguments}";
-        }
-    }
-
-    /// <summary>
-    /// Process.WaitForExitAsyncの拡張メソッド
-    /// .NET Framework 4.6.1には存在しないため追加
-    /// </summary>
-    internal static class ProcessExtensions
-    {
-        /// <summary>
-        /// プロセスの終了を非同期で待機
-        /// </summary>
-        public static Task WaitForExitAsync(this Process process)
-        {
-            var tcs = new TaskCompletionSource<bool>();
-            
-            process.EnableRaisingEvents = true;
-            process.Exited += (s, e) => tcs.TrySetResult(true);
-            
-            if (process.HasExited)
-            {
-                return Task.CompletedTask;
-            }
-            
-            return tcs.Task;
         }
     }
 }

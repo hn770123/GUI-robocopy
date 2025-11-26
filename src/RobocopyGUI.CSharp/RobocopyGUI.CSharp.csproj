@@ -77,10 +77,5 @@
     <Compile Include="Services\RobocopyService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="RoboSharp">
-      <Version>1.5.4</Version>
-    </PackageReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

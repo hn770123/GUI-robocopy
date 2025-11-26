@@ -122,8 +122,14 @@ Namespace Services
                                                                        Dim percentIndex = e.Data.IndexOf("%"c)
                                                                        If percentIndex > 0 Then
                                                                            Dim startIndex = percentIndex - 1
-                                                                           While startIndex > 0 AndAlso (Char.IsDigit(e.Data(startIndex - 1)) OrElse e.Data(startIndex - 1) = "."c)
-                                                                               startIndex -= 1
+                                                                           ' 安全なインデックスチェック
+                                                                           While startIndex > 0
+                                                                               Dim prevChar = e.Data(startIndex - 1)
+                                                                               If Char.IsDigit(prevChar) OrElse prevChar = "."c Then
+                                                                                   startIndex -= 1
+                                                                               Else
+                                                                                   Exit While
+                                                                               End If
                                                                            End While
 
                                                                            Dim percentStr = e.Data.Substring(startIndex, percentIndex - startIndex)
@@ -153,8 +159,6 @@ Namespace Services
 
                         Await Task.Delay(100)
                     End While
-
-                    Await WaitForExitAsync(process)
 
                     ' robocopyの終了コード解釈
                     ' 0-7: 成功（コピー完了）
@@ -282,23 +286,6 @@ Namespace Services
         Public Function GenerateCommand(source As String, destination As String, options As RobocopyOption) As String
             Dim arguments = BuildArguments(source, destination, options)
             Return $"robocopy {arguments}"
-        End Function
-
-        ''' <summary>
-        ''' プロセスの終了を非同期で待機
-        ''' .NET Framework 4.6.1には存在しないため追加
-        ''' </summary>
-        Private Function WaitForExitAsync(process As Process) As Task
-            Dim tcs As New TaskCompletionSource(Of Boolean)()
-
-            process.EnableRaisingEvents = True
-            AddHandler process.Exited, Sub(s, e) tcs.TrySetResult(True)
-
-            If process.HasExited Then
-                Return Task.CompletedTask
-            End If
-
-            Return tcs.Task
         End Function
 
     End Class

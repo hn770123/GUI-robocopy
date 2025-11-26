@@ -80,10 +80,5 @@
     <Compile Include="Services\RobocopyService.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="RoboSharp">
-      <Version>1.5.4</Version>
-    </PackageReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>
