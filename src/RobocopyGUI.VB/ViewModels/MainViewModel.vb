@@ -321,15 +321,17 @@ Namespace ViewModels
 
         ''' <summary>
         ''' 確認可能かどうか判定
+        ''' robocopyの/Lオプションを使用するため、コピー元とコピー先の両方が必要
         ''' </summary>
         Private Function CanConfirm() As Boolean
             Return Not IsRunning AndAlso
                    Not String.IsNullOrWhiteSpace(SourcePath) AndAlso
+                   Not String.IsNullOrWhiteSpace(DestinationPath) AndAlso
                    Directory.Exists(SourcePath)
         End Function
 
         ''' <summary>
-        ''' 確認処理を実行（ファイル一覧を取得）
+        ''' 確認処理を実行（robocopyの/Lオプションを使用してコピー対象ファイル一覧を取得）
         ''' </summary>
         Private Async Function ConfirmAsync() As Task
             If Not Directory.Exists(SourcePath) Then
@@ -337,66 +339,52 @@ Namespace ViewModels
                 Return
             End If
 
+            If String.IsNullOrWhiteSpace(DestinationPath) Then
+                MessageBox.Show("コピー先フォルダを指定してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error)
+                Return
+            End If
+
             IsRunning = True
-            StatusMessage = "ファイル一覧を取得中..."
+            StatusMessage = "robocopyでコピー対象を確認中..."
             ProgressPercentage = 0
             _cancellationTokenSource = New CancellationTokenSource()
 
             Try
-                Dim files = Await Task.Run(Function() GetFileList(SourcePath, _cancellationTokenSource.Token))
+                ' 選択されたオプションを取得
+                Dim options = GetSelectedOptions()
+
+                ' robocopyの/Lオプションでプレビュー実行
+                Dim previewResult = Await _robocopyService.PreviewAsync(
+                    SourcePath,
+                    DestinationPath,
+                    options,
+                    _cancellationTokenSource.Token)
 
                 Application.Current.Dispatcher.Invoke(Sub()
                                                           FileList.Clear()
-                                                          Dim totalSize As Long = 0
 
-                                                          For Each file In files
+                                                          For Each file In previewResult.Files
                                                               FileList.Add(file)
-                                                              totalSize += file.FileSize
                                                           Next
 
                                                           TotalFileCount = FileList.Count
-                                                          TotalFileSizeDisplay = FormatFileSize(totalSize)
-                                                          StatusMessage = $"確認完了: {TotalFileCount} ファイル"
+                                                          TotalFileSizeDisplay = FormatFileSize(previewResult.TotalSize)
+
+                                                          If previewResult.Success Then
+                                                              StatusMessage = $"確認完了: {TotalFileCount} ファイル（実際にコピーされるファイル数）"
+                                                          Else
+                                                              StatusMessage = $"確認完了（警告あり）: {TotalFileCount} ファイル - {previewResult.ErrorMessage}"
+                                                          End If
                                                           ProgressPercentage = 100
                                                       End Sub)
             Catch ex As OperationCanceledException
                 StatusMessage = "確認がキャンセルされました"
             Catch ex As Exception
                 StatusMessage = $"エラー: {ex.Message}"
-                MessageBox.Show($"ファイル一覧の取得中にエラーが発生しました。{vbCrLf}{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error)
+                MessageBox.Show($"確認処理中にエラーが発生しました。{vbCrLf}{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error)
             Finally
                 IsRunning = False
             End Try
-        End Function
-
-        ''' <summary>
-        ''' ファイル一覧を取得
-        ''' </summary>
-        Private Function GetFileList(path As String, token As CancellationToken) As ObservableCollection(Of FileItem)
-            Dim fileItems As New ObservableCollection(Of FileItem)()
-            Dim sourceDir As New DirectoryInfo(path)
-
-            Try
-                Dim files = sourceDir.GetFiles("*", SearchOption.AllDirectories)
-
-                For Each file In files
-                    token.ThrowIfCancellationRequested()
-
-                    Dim relativePath = file.FullName.Substring(path.Length).TrimStart("\"c, "/"c)
-                    Dim relativeDir = IO.Path.GetDirectoryName(relativePath)
-
-                    fileItems.Add(New FileItem With {
-                        .FileName = file.Name,
-                        .RelativePath = If(String.IsNullOrEmpty(relativeDir), "\", relativeDir),
-                        .FileSize = file.Length,
-                        .LastModified = file.LastWriteTime
-                    })
-                Next
-            Catch ex As UnauthorizedAccessException
-                ' アクセス権限がないフォルダはスキップ
-            End Try
-
-            Return fileItems
         End Function
 
         ''' <summary>

@@ -320,16 +320,18 @@ namespace RobocopyGUI.ViewModels
 
         /// <summary>
         /// 確認可能かどうか判定
+        /// robocopyの/Lオプションを使用するため、コピー元とコピー先の両方が必要
         /// </summary>
         private bool CanConfirm()
         {
             return !IsRunning && 
                    !string.IsNullOrWhiteSpace(SourcePath) && 
+                   !string.IsNullOrWhiteSpace(DestinationPath) &&
                    Directory.Exists(SourcePath);
         }
 
         /// <summary>
-        /// 確認処理を実行（ファイル一覧を取得）
+        /// 確認処理を実行（robocopyの/Lオプションを使用してコピー対象ファイル一覧を取得）
         /// </summary>
         private async Task ConfirmAsync()
         {
@@ -339,29 +341,49 @@ namespace RobocopyGUI.ViewModels
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(DestinationPath))
+            {
+                MessageBox.Show("コピー先フォルダを指定してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             IsRunning = true;
-            StatusMessage = "ファイル一覧を取得中...";
+            StatusMessage = "robocopyでコピー対象を確認中...";
             ProgressPercentage = 0;
             _cancellationTokenSource = new CancellationTokenSource();
 
             try
             {
-                var files = await Task.Run(() => GetFileList(SourcePath, _cancellationTokenSource.Token));
+                // 選択されたオプションを取得
+                var options = GetSelectedOptions();
                 
+                // robocopyの/Lオプションでプレビュー実行
+                var previewResult = await _robocopyService.PreviewAsync(
+                    SourcePath, 
+                    DestinationPath, 
+                    options, 
+                    _cancellationTokenSource.Token);
+
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     FileList.Clear();
-                    long totalSize = 0;
                     
-                    foreach (var file in files)
+                    foreach (var file in previewResult.Files)
                     {
                         FileList.Add(file);
-                        totalSize += file.FileSize;
                     }
                     
                     TotalFileCount = FileList.Count;
-                    TotalFileSizeDisplay = FormatFileSize(totalSize);
-                    StatusMessage = $"確認完了: {TotalFileCount} ファイル";
+                    TotalFileSizeDisplay = FormatFileSize(previewResult.TotalSize);
+                    
+                    if (previewResult.Success)
+                    {
+                        StatusMessage = $"確認完了: {TotalFileCount} ファイル（実際にコピーされるファイル数）";
+                    }
+                    else
+                    {
+                        StatusMessage = $"確認完了（警告あり）: {TotalFileCount} ファイル - {previewResult.ErrorMessage}";
+                    }
                     ProgressPercentage = 100;
                 });
             }
@@ -372,48 +394,12 @@ namespace RobocopyGUI.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"エラー: {ex.Message}";
-                MessageBox.Show($"ファイル一覧の取得中にエラーが発生しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"確認処理中にエラーが発生しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 IsRunning = false;
             }
-        }
-
-        /// <summary>
-        /// ファイル一覧を取得
-        /// </summary>
-        private ObservableCollection<FileItem> GetFileList(string path, CancellationToken token)
-        {
-            var fileItems = new ObservableCollection<FileItem>();
-            var sourceDir = new DirectoryInfo(path);
-
-            try
-            {
-                var files = sourceDir.GetFiles("*", SearchOption.AllDirectories);
-                
-                foreach (var file in files)
-                {
-                    token.ThrowIfCancellationRequested();
-                    
-                    var relativePath = file.FullName.Substring(path.Length).TrimStart('\\', '/');
-                    var relativeDir = Path.GetDirectoryName(relativePath);
-                    
-                    fileItems.Add(new FileItem
-                    {
-                        FileName = file.Name,
-                        RelativePath = string.IsNullOrEmpty(relativeDir) ? "\\" : relativeDir,
-                        FileSize = file.Length,
-                        LastModified = file.LastWriteTime
-                    });
-                }
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // アクセス権限がないフォルダはスキップ
-            }
-
-            return fileItems;
         }
 
         /// <summary>

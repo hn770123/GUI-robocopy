@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using RobocopyGUI.Models;
@@ -61,11 +63,204 @@ namespace RobocopyGUI.Services
     }
 
     /// <summary>
+    /// robocopyのプレビュー（確認）結果を保持するクラス
+    /// /Lオプションで実行した結果
+    /// </summary>
+    public class RobocopyPreviewResult
+    {
+        /// <summary>
+        /// 成功したかどうか
+        /// </summary>
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// コピー対象ファイルの一覧
+        /// </summary>
+        public ObservableCollection<FileItem> Files { get; set; } = new ObservableCollection<FileItem>();
+
+        /// <summary>
+        /// 合計サイズ（バイト）
+        /// </summary>
+        public long TotalSize { get; set; }
+
+        /// <summary>
+        /// エラーメッセージ
+        /// </summary>
+        public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// 終了コード
+        /// </summary>
+        public int ExitCode { get; set; }
+    }
+
+    /// <summary>
     /// robocopyの実行を管理するサービスクラス
     /// robocopyコマンドのラッパーとして機能する
     /// </summary>
     public class RobocopyService
     {
+        /// <summary>
+        /// robocopyの確認（プレビュー）を実行
+        /// /Lオプションを使用して実際にはコピーせず、コピー対象ファイルの一覧を取得する
+        /// </summary>
+        /// <param name="source">コピー元パス</param>
+        /// <param name="destination">コピー先パス</param>
+        /// <param name="options">オプション設定</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
+        /// <returns>プレビュー結果</returns>
+        public async Task<RobocopyPreviewResult> PreviewAsync(
+            string source,
+            string destination,
+            RobocopyOption options,
+            CancellationToken cancellationToken)
+        {
+            var result = new RobocopyPreviewResult();
+
+            try
+            {
+                // コマンドライン引数を構築（/Lオプション付き）
+                var arguments = BuildArguments(source, destination, options, listOnly: true);
+
+                // Processを使用してrobocopyを実行
+                var processStartInfo = new ProcessStartInfo
+                {
+                    FileName = "robocopy",
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.GetEncoding(932) // Shift-JIS
+                };
+
+                using (var process = new Process { StartInfo = processStartInfo })
+                {
+                    var outputLines = new List<string>();
+
+                    // 出力イベントハンドラ
+                    process.OutputDataReceived += (sender, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                        {
+                            outputLines.Add(e.Data);
+                        }
+                    };
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+
+                    // キャンセル対応の待機
+                    while (!process.HasExited)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            try
+                            {
+                                process.Kill();
+                            }
+                            catch { }
+
+                            cancellationToken.ThrowIfCancellationRequested();
+                        }
+
+                        await Task.Delay(100);
+                    }
+
+                    // robocopyの終了コード解釈
+                    result.ExitCode = process.ExitCode;
+                    result.Success = process.ExitCode < 8;
+
+                    if (!result.Success)
+                    {
+                        result.ErrorMessage = GetExitCodeMessage(process.ExitCode);
+                    }
+
+                    // 出力からファイル情報を解析
+                    ParsePreviewOutput(outputLines, result, source);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.ErrorMessage = ex.Message;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// プレビュー出力からファイル情報を解析
+        /// </summary>
+        private void ParsePreviewOutput(List<string> outputLines, RobocopyPreviewResult result, string sourcePath)
+        {
+            // robocopyの出力パターン
+            // "    新しいファイル                123        path\to\file.txt"
+            // "         Newer                    456        path\to\file2.txt"
+            // "    New File                     789        file.txt"
+            var filePatterns = new[]
+            {
+                @"^\s*(新しいファイル|New File|Newer|新しい|変更|Changed|Older|古い)\s+(\d+)\s+(.+)$",
+                @"^\s+(\d+)\s+(.+)$"  // サイズとファイルパスのみの行
+            };
+
+            var copyReasonMap = new Dictionary<string, string>
+            {
+                { "新しいファイル", "新規" },
+                { "New File", "新規" },
+                { "Newer", "更新" },
+                { "新しい", "更新" },
+                { "変更", "変更" },
+                { "Changed", "変更" },
+                { "Older", "古い" },
+                { "古い", "古い" }
+            };
+
+            foreach (var line in outputLines)
+            {
+                // ファイル情報を含む行を検出
+                var match = Regex.Match(line, filePatterns[0], RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    var reason = match.Groups[1].Value;
+                    var sizeStr = match.Groups[2].Value;
+                    var filePath = match.Groups[3].Value.Trim();
+
+                    if (long.TryParse(sizeStr, out long fileSize))
+                    {
+                        var fileName = System.IO.Path.GetFileName(filePath);
+                        var relativePath = System.IO.Path.GetDirectoryName(filePath);
+
+                        // コピー理由を日本語に変換
+                        var copyReason = "コピー";
+                        foreach (var kvp in copyReasonMap)
+                        {
+                            if (reason.IndexOf(kvp.Key, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                copyReason = kvp.Value;
+                                break;
+                            }
+                        }
+
+                        result.Files.Add(new FileItem
+                        {
+                            FileName = fileName,
+                            RelativePath = string.IsNullOrEmpty(relativePath) ? "\\" : relativePath,
+                            FileSize = fileSize,
+                            LastModified = DateTime.Now, // robocopyの/L出力には日時が含まれないため現在時刻で代用
+                            CopyReason = copyReason
+                        });
+
+                        result.TotalSize += fileSize;
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// robocopyを非同期で実行
         /// </summary>
@@ -207,7 +402,11 @@ namespace RobocopyGUI.Services
         /// <summary>
         /// コマンドライン引数を構築
         /// </summary>
-        private string BuildArguments(string source, string destination, RobocopyOption options)
+        /// <param name="source">コピー元パス</param>
+        /// <param name="destination">コピー先パス</param>
+        /// <param name="options">オプション設定</param>
+        /// <param name="listOnly">trueの場合、/Lオプションを追加（実際にコピーせずリスト表示のみ）</param>
+        private string BuildArguments(string source, string destination, RobocopyOption options, bool listOnly = false)
         {
             var args = new List<string>
             {
@@ -274,9 +473,16 @@ namespace RobocopyGUI.Services
                 args.Add("/PURGE");
             }
 
-            if (!string.IsNullOrEmpty(options.LogPath))
+            if (!string.IsNullOrEmpty(options.LogPath) && !listOnly)
             {
                 args.Add($"/LOG:\"{options.LogPath}\"");
+            }
+
+            // リスト表示のみの場合、/Lオプションを追加
+            if (listOnly)
+            {
+                args.Add("/L");  // リスト表示のみ（実際にコピーしない）
+                args.Add("/V");  // 詳細出力
             }
 
             // 進捗表示用オプション

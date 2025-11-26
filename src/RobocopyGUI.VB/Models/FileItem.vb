@@ -27,6 +27,11 @@ Namespace Models
         Public Property LastModified As DateTime
 
         ''' <summary>
+        ''' コピー理由（新しいファイル、変更など）
+        ''' </summary>
+        Public Property CopyReason As String
+
+        ''' <summary>
         ''' ファイルサイズの表示用文字列
         ''' </summary>
         Public ReadOnly Property FileSizeDisplay As String

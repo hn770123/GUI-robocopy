@@ -29,6 +29,11 @@ namespace RobocopyGUI.Models
         public DateTime LastModified { get; set; }
 
         /// <summary>
+        /// コピー理由（新しいファイル、変更など）
+        /// </summary>
+        public string CopyReason { get; set; }
+
+        /// <summary>
         /// ファイルサイズの表示用文字列
         /// </summary>
         public string FileSizeDisplay

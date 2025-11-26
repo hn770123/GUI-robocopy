@@ -107,10 +107,10 @@
                           CanUserAddRows="False"
                           Margin="5">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="ファイル名" Binding="{Binding FileName}" Width="250"/>
+                        <DataGridTextColumn Header="理由" Binding="{Binding CopyReason}" Width="60"/>
+                        <DataGridTextColumn Header="ファイル名" Binding="{Binding FileName}" Width="200"/>
                         <DataGridTextColumn Header="相対パス" Binding="{Binding RelativePath}" Width="*"/>
                         <DataGridTextColumn Header="サイズ" Binding="{Binding FileSizeDisplay}" Width="100"/>
-                        <DataGridTextColumn Header="更新日時" Binding="{Binding LastModified, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="150"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
